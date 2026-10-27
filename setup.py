@@ -1730,6 +1730,10 @@ setup(
         "deepstream": ["nvidia-deepstream-videodecode-cu13>=9.0.2"],
         "flashinfer": [],  # Kept for backwards compatibility
         "b12x": ["b12x==1.5.1"],
+        # Optional MXFP8 W8A8 GEMM backend. Not on PyPI; install with
+        #   uv pip install "vllm[halops]" -f \
+        #   https://www.paddlepaddle.org.cn/packages/stable/cu132/halops/
+        "halops": ["halops==0.1.0"],
         # Optional deps for Helion kernel development
         # NOTE: When updating helion version, also update CI files:
         #   - .buildkite/test_areas/kernels.yaml

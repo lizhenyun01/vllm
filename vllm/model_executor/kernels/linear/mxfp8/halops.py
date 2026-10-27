@@ -29,7 +29,11 @@ def _import_halops():
         from halops import dense_gemm, group_wise_quant
     except ImportError as exc:
         raise ImportError(
-            "HALOps GEMM backend requested, but the `halops` package is not installed."
+            "HALOps GEMM backend requested, but the `halops` package is not "
+            "installed. Install it with "
+            '`uv pip install "vllm[halops]" -f '
+            "https://www.paddlepaddle.org.cn/packages/stable/cu132/halops/`; "
+            "the find-links URL must match the CUDA build of torch."
         ) from exc
     return dense_gemm, group_wise_quant
 
@@ -50,13 +54,10 @@ def _halops_mxfp8_linear(
         return x.new_empty((*x.shape[:-1], n))
     x2d = x2d.contiguous()
 
-    # group_wise_quant pads the activation and its SfAtom scale to whole
-    # 128-row atoms; the kernel reads (and discards) those rows.
     dense_gemm, group_wise_quant = _import_halops()
     q_input, sfa = group_wise_quant(x2d, mode=HALOPS_MODE, use_swizzle=True)
-    m_padded = q_input.shape[0]
 
-    output = torch.empty((m_padded, n), dtype=torch.bfloat16, device=x.device)
+    output = torch.empty((m, n), dtype=torch.bfloat16, device=x.device)
     dense_gemm(
         input=q_input,
         weight=weight,
@@ -68,7 +69,7 @@ def _halops_mxfp8_linear(
         sm_count=-1,
         mode=HALOPS_MODE,
     )
-    return output[:m].to(out_dtype).view(*x.shape[:-1], n)
+    return output.to(out_dtype).view(*x.shape[:-1], n)
 
 
 def _halops_mxfp8_linear_fake(
